@@ -25,15 +25,17 @@ const AudioPlayer = () => {
 	}, [playNext]);
 
 	useEffect(() => {
-		if (!audioRef.current || !currentSong) return;
-
 		const audio = audioRef.current;
 
-		const isSongChange = prevSongRef.current !== currentSong?.audioUrl;
+		if (!audio || !currentSong) return;
+
+		const audioUrl = currentSong.audioUrl ?? ""; // fallback
+		const isSongChange = prevSongRef.current !== audioUrl;
+
 		if (isSongChange) {
-			audio.src = currentSong?.audioUrl;
+			audio.src = audioUrl;
 			audio.currentTime = 0;
-			prevSongRef.current = currentSong?.audioUrl;
+			prevSongRef.current = audioUrl;
 
 			if (isPlaying) audio.play();
 		}
@@ -41,4 +43,6 @@ const AudioPlayer = () => {
 
 	return <audio ref={audioRef} />;
 };
+
 export default AudioPlayer;
+
