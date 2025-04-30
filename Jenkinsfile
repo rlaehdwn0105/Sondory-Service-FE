@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'node:20-alpine'
-      args '-u root:root'
-    }
-  }
+  agent any
 
   environment {
     dockerHubRegistry = 'dongjukim123/soundory-fe'
@@ -27,6 +22,12 @@ pipeline {
     }
 
     stage('Install & Build (Vite)') {
+      agent {
+        docker {
+          image 'node:20-alpine'
+          args '-u root:root'
+        }
+      }
       steps {
         sh '''
           npm ci
