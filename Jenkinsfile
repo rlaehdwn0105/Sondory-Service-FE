@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'node:20-alpine'
+      args '-u root:root'
+    }
+  }
 
   environment {
     dockerHubRegistry = 'dongjukim123/soundory-fe'
@@ -55,11 +60,10 @@ pipeline {
 
   post {
     success {
-      echo '프론트엔드 CI 성공: 이미지 빌드 및 푸시 완료'
+      echo '✅ 프론트엔드 CI 성공: 이미지 빌드 및 푸시 완료'
     }
     failure {
-      echo 'd실패: 로그 확인 필요'
+      echo '❌ CI 실패: 로그 확인 필요'
     }
   }
 }
-
