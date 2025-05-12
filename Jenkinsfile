@@ -19,10 +19,18 @@ pipeline {
         checkout([$class: 'GitSCM',
           branches: [[name: "refs/heads/${env.GITHUB_BRANCH}"]],
           userRemoteConfigs: [[
-            url: "${env.GITHUB_REPO_URL}",
+            url: "${GITHUB_REPO_URL}",
             credentialsId: "${GITHUB_CREDENTIALS}"
           ]]
         ])
+      }
+      post {
+        success {
+          echo 'Checkout succeeded.'
+        }
+        failure {
+          echo 'Checkout failed.'
+        }
       }
     }
 
@@ -32,6 +40,14 @@ pipeline {
           docker build -t ${DOCKER_REGISTRY}:${BUILD_NUMBER} .
           docker tag ${DOCKER_REGISTRY}:${BUILD_NUMBER} ${DOCKER_REGISTRY}:latest
         """
+      }
+      post {
+        success {
+          echo 'Docker build succeeded.'
+        }
+        failure {
+          echo 'Docker build failed.'
+        }
       }
     }
 
@@ -45,7 +61,15 @@ pipeline {
         }
       }
       post {
-        always {
+        success {
+          echo 'Docker push succeeded.'
+          sh """
+            docker rmi ${DOCKER_REGISTRY}:${BUILD_NUMBER} || true
+            docker rmi ${DOCKER_REGISTRY}:latest || true
+          """
+        }
+        failure {
+          echo 'Docker push failed.'
           sh """
             docker rmi ${DOCKER_REGISTRY}:${BUILD_NUMBER} || true
             docker rmi ${DOCKER_REGISTRY}:latest || true
@@ -75,15 +99,23 @@ pipeline {
           }
         }
       }
+      post {
+        success {
+          echo 'Helm values.yaml updated and pushed successfully.'
+        }
+        failure {
+          echo 'Failed to update Helm values.yaml.'
+        }
+      }
     }
   }
 
   post {
     success {
-      echo '✅ 프론트엔드 빌드, 이미지 푸시, Helm values.yaml 업데이트 완료'
+      echo 'Pipeline completed successfully.'
     }
     failure {
-      echo '❌ 실패: 각 단계 로그를 확인하세요'
+      echo 'Pipeline failed.'
     }
   }
 }
