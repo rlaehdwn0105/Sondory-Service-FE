@@ -14,7 +14,7 @@ pipeline {
 
   stages {
 
-    stage('Checkout') {
+    stage('Checkout Source') {
       steps {
         checkout([$class: 'GitSCM',
           branches: [[name: "refs/heads/${env.GITHUB_BRANCH}"]],
@@ -23,37 +23,6 @@ pipeline {
             credentialsId: "${GITHUB_CREDENTIALS}"
           ]]
         ])
-      }
-      post {
-        success {
-          echo 'Repository clone success!'
-        }
-        failure {
-          echo 'Repository clone failure!'
-        }
-      }
-    }
-
-    stage('Install & Build') {
-      agent {
-        docker {
-          image 'node:20-alpine'
-          args '-u root:root'
-        }
-      }
-      steps {
-        sh '''
-          npm ci
-          npm run build
-        '''
-      }
-      post {
-        success {
-          echo 'Vite build success!'
-        }
-        failure {
-          echo 'Vite build failure!'
-        }
       }
     }
 
@@ -64,14 +33,6 @@ pipeline {
           docker tag ${DOCKER_REGISTRY}:${BUILD_NUMBER} ${DOCKER_REGISTRY}:latest
         """
       }
-      post {
-        success {
-          echo 'Docker image build success!'
-        }
-        failure {
-          echo 'Docker image build failure!'
-        }
-      }
     }
 
     stage('Docker Push') {
@@ -81,19 +42,10 @@ pipeline {
             docker push ${DOCKER_REGISTRY}:${BUILD_NUMBER}
             docker push ${DOCKER_REGISTRY}:latest
           """
-          sleep 10
         }
       }
       post {
-        success {
-          echo 'Docker image push success!'
-          sh """
-            docker rmi ${DOCKER_REGISTRY}:${BUILD_NUMBER} || true
-            docker rmi ${DOCKER_REGISTRY}:latest || true
-          """
-        }
-        failure {
-          echo 'Docker image push failure!'
+        always {
           sh """
             docker rmi ${DOCKER_REGISTRY}:${BUILD_NUMBER} || true
             docker rmi ${DOCKER_REGISTRY}:latest || true
@@ -123,23 +75,15 @@ pipeline {
           }
         }
       }
-      post {
-        success {
-          echo 'Helm values.yaml updated and pushed successfully!'
-        }
-        failure {
-          echo 'Helm update failed!'
-        }
-      }
     }
   }
 
   post {
     success {
-      echo '✅ 프론트엔드 파이프라인 성공: 빌드, 푸시, GitOps 동기화 완료'
+      echo '✅ 프론트엔드 빌드, 이미지 푸시, Helm values.yaml 업데이트 완료'
     }
     failure {
-      echo '❌ 파이프라인 실패: 각 단계 로그를 확인하세요'
+      echo '❌ 실패: 각 단계 로그를 확인하세요'
     }
   }
 }
